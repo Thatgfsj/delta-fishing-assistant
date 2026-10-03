@@ -17,13 +17,11 @@ class Runner(threading.Thread):
     # Delay between releasing the first cast click and pressing the second.
     CAST_CLICK_GAP = 0.15
 
-    def __init__(self, config, window, automatic, already_cast, publish, test_click=False):
+    def __init__(self, config, window, already_cast, publish, test_click=False):
         super().__init__(daemon=True)
         self.cfg, self.window = config, window
-        self.automatic, self.already_cast, self.publish = automatic, already_cast, publish
+        self.already_cast, self.publish = already_cast, publish
         self.test_click = test_click
-        if test_click and not automatic:
-            raise ValueError("单次点击测试必须显式启用鼠标操作")
         self.stop_event = threading.Event()
         self.engine = Engine(config)
 
@@ -51,7 +49,7 @@ class Runner(threading.Thread):
         log_folder.mkdir(exist_ok=True)
         log_path = log_folder / f"session_{datetime.now():%Y%m%d_%H%M%S_%f}.jsonl"
         reader, stable = BaitReader(), StableBait()
-        last_view, last_bait, last_sample = 0.0, 0.0, 0.0
+        last_bait, last_sample = 0.0, 0.0
         last_state = None
         digit, confidence, bait_crop = None, 0.0, None
         try:
@@ -61,12 +59,12 @@ class Runner(threading.Thread):
                     log.write(json.dumps(record, ensure_ascii=False)+"\n")
                     log.flush()
                     self.publish("log", record)
-                event("start", automatic=self.automatic, already_cast=self.already_cast, test_click=self.test_click,
+                event("start", already_cast=self.already_cast, test_click=self.test_click,
                       window={"hwnd": self.window[0], "title": self.window[1], "pid": self.window[2]},
                       settings=self.cfg.__dict__)
                 own_access, game_access = process_integrity(os.getpid()), process_integrity(self.window[2])
                 event("permissions", assistant=own_access, game=game_access)
-                if (self.automatic and own_access["level"] is not None and game_access["level"] is not None
+                if (own_access["level"] is not None and game_access["level"] is not None
                         and own_access["level"] < game_access["level"]):
                     raise RuntimeError("助手权限低于游戏，无法发送点击；请关闭助手后右键 start.cmd，以管理员身份运行")
                 if self.test_click:
@@ -113,25 +111,16 @@ class Runner(threading.Thread):
                     for action in actions:
                         if self.stop_event.is_set():
                             break
-                        if self.automatic:
-                            self.execute_action(mouse, action)
-                        event(action, bait=bait, splash_ratio=round(score, 6), automatic=self.automatic,
-                              click_count=(2 if action == "cast" else 1 if action == "hook" else None) if self.automatic else 0,
-                              input_result="os_accepted_game_unverified" if self.automatic else "preview_only")
-                        if action == "hook" and not self.automatic:
-                            self.engine.pause("已识别一次咬钩；预览结束，没有点击鼠标")
+                        self.execute_action(mouse, action)
+                        event(action, bait=bait, splash_ratio=round(score, 6),
+                              click_count=2 if action == "cast" else 1 if action == "hook" else None,
+                              input_result="os_accepted_game_unverified")
                     if now-last_sample >= 1.0 or self.engine.state != last_state:
                         event("sample", state=self.engine.state, status=self.engine.status(now),
                               armed=self.engine.gate.armed, splash_ratio=round(score, 6),
                               bait=bait, raw_bait=digit, bait_confidence=round(confidence, 4),
-                              client=box)
+                              casts=self.engine.casts, hooks=self.engine.catches, client=box)
                         last_sample, last_state = now, self.engine.state
-                    if now-last_view >= 0.12:
-                        self.publish("frame", {"image": crop, "mask": mask, "bait_image": bait_crop,
-                                             "bait": bait, "confidence": confidence, "score": score,
-                                             "status": self.engine.status(now), "casts": self.engine.casts,
-                                             "hooks": self.engine.catches})
-                        last_view = now
                     if self.engine.state == "paused":
                         break
                     self.stop_event.wait(max(0, 1/self.cfg.fps-(time.monotonic()-tick)))

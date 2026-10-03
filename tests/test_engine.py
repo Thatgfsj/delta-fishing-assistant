@@ -65,11 +65,12 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(engine.update(5.06, Observation()), ["cast"])
         self.assertEqual(engine.bait, 5)
 
-    def test_zero_bait_never_casts_when_reload_timer_expires(self):
+    def test_depleted_bait_blind_recasts_after_reload(self):
         engine = self.setup_hook(1, vision=True)
-        self.advance(engine, .3, 6.0, bait=0)
+        self.advance(engine, .3, 5.0, bait=0)
         self.assertEqual(engine.state, "reload")
-        self.assertEqual(engine.update(6.05, Observation(bait=5)), ["cast"])
+        self.assertEqual(engine.update(5.06, Observation(bait=0)), ["cast"])
+        self.assertEqual(engine.bait, 5)
 
     def test_focus_loss_prevents_due_cast(self):
         engine = self.setup_hook(5)

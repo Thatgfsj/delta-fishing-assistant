@@ -14,7 +14,7 @@ if os.name == "nt":
 @unittest.skipUnless(os.name == "nt", "Windows runtime")
 class RuntimeTests(unittest.TestCase):
     def action_runner(self):
-        runner = Runner(Config(), (123, "测试窗口", 456), True, False, Mock())
+        runner = Runner(Config(), (123, "测试窗口", 456), False, Mock())
         runner.stop_event.wait = Mock(return_value=False)
         mouse = Mouse(123, 456, runner.stop_event)
         mouse._event = Mock()  # Exercise press/release logic without sending OS input.
@@ -68,7 +68,7 @@ class RuntimeTests(unittest.TestCase):
                 mouse = mouse_class.return_value
                 mouse.focused.return_value = focused
                 mouse.focus_details.return_value = {}
-                runner = Runner(Config(), (123, "测试窗口", 456), True, False, Mock(), test_click=True)
+                runner = Runner(Config(), (123, "测试窗口", 456), False, Mock(), test_click=True)
                 if stopped:
                     runner.stop()
                 runner.run()
@@ -103,7 +103,7 @@ class RuntimeTests(unittest.TestCase):
                   patch("fishing_assistant.runtime.mss.mss") as capture_class,
                   patch("fishing_assistant.runtime.process_integrity", side_effect=[
                       {"level": 8192, "label": "普通"}, {"level": 12288, "label": "管理员"}])):
-                runner = Runner(Config(), (123, "测试窗口", 456), True, False,
+                runner = Runner(Config(), (123, "测试窗口", 456), False,
                                 lambda kind, data: published.append((kind, data)))
                 runner.run()
                 mouse_class.return_value.click.assert_not_called()

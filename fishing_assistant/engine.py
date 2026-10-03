@@ -136,14 +136,15 @@ class Engine:
                 self.deadline = self.entered + self.cfg.reload_wait
             if now < self.deadline:
                 return []
-            if self.cfg.bait_vision:
-                # A value of 0 never permits a cast. Reader provides only fresh stable data.
-                if obs.bait is not None and obs.bait > 0:
-                    return self._cast(now, obs.bait)
-                if now > self.deadline + self.cfg.ready_timeout:
-                    self.pause("换饵/收竿后没有确认到可用鱼饵")
+            # The game refills a depleted stack on its own during the reload pause,
+            # so a fresh 0 never blocks the recast; the digit is informational only.
+            if obs.bait is not None and obs.bait > 0:
+                bait = obs.bait
+            elif self.state == "reload":
+                bait = 5
             else:
-                return self._cast(now, 5 if self.state == "reload" else self.bait)
+                bait = self.bait
+            return self._cast(now, bait)
         return []
 
     def status(self, now):
