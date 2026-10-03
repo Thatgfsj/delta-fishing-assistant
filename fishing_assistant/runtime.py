@@ -79,7 +79,7 @@ class Runner(threading.Thread):
                         self.engine.pause("单次左键已发送并停止；请确认游戏是否抛竿")
                     event("stop", reason=self.engine.reason)
                     return
-                self.engine.start(time.monotonic(), already_cast=self.already_cast or not self.automatic)
+                self.engine.start(time.monotonic(), already_cast=self.already_cast)
                 saved_bait_sample = False
                 while not self.stop_event.is_set():
                     tick = time.monotonic()
