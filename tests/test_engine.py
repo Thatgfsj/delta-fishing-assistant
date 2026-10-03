@@ -116,6 +116,10 @@ class EngineTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             Config(reel_wait=float("nan")).validate()
 
+    def test_unknown_theme_rejected(self):
+        with self.assertRaises(ValueError):
+            Config(theme="neon").validate()
+
 
 if __name__ == "__main__":
     unittest.main()

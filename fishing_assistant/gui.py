@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image, ImageTk
 
 from . import __version__
-from .config import Config, ROOT
+from .config import Config, ROOT, THEMES
 from .runtime import Runner
 from .replay import replay_video, SAMPLE_CASTS
 from .windows import Hotkeys, list_windows, client_box
@@ -37,7 +37,7 @@ class RegionPicker(tk.Toplevel):
         self.canvas.pack(fill="both", expand=True)
         self.canvas.create_image(0, 0, image=self.photo, anchor="nw")
         self.canvas.create_rectangle(0, 0, box["width"], 55, fill=BG, outline="")
-        self.canvas.create_text(20, 26, text="拖动框选检测区域 · 松开保存 · Esc 取消", fill="white", font=("Microsoft YaHei UI", 15), anchor="w")
+        self.canvas.create_text(20, 26, text="拖动框选检测区域 · 松开保存 · Esc 取消", fill=TEXT, font=("Microsoft YaHei UI", 15), anchor="w")
         self.origin, self.rect = None, None
         self.canvas.bind("<ButtonPress-1>", self.press)
         self.canvas.bind("<B1-Motion>", self.drag)
@@ -95,20 +95,27 @@ class App(tk.Tk):
         self.after(60, self.poll)
 
     def style_ui(self):
+        ttk.Style(self).theme_use("clam")
+        self.apply_theme(self.cfg.theme)
+
+    def apply_theme(self, key):
+        pal = THEMES.get(key, THEMES["graphite"])
+        global BG, PANEL, TEXT, MUTED, ACCENT
+        BG, PANEL, TEXT, MUTED, ACCENT = pal["bg"], pal["panel"], pal["text"], pal["muted"], pal["accent"]
+        self.configure(bg=BG)
         style = ttk.Style(self)
-        style.theme_use("clam")
         style.configure(".", background=BG, foreground=TEXT, font=("Microsoft YaHei UI", 10))
         style.configure("TFrame", background=BG)
         style.configure("TLabel", background=BG, foreground=TEXT)
         style.configure("Muted.TLabel", foreground=MUTED)
-        style.configure("TLabelframe", background=BG, bordercolor="#344657")
+        style.configure("TLabelframe", background=BG, bordercolor=pal["border"])
         style.configure("TLabelframe.Label", foreground=ACCENT, background=BG)
-        style.configure("TButton", background="#283b4b", padding=(12, 8), borderwidth=0)
-        style.map("TButton", background=[("active", "#37566b")])
-        style.configure("Start.TButton", background=ACCENT, foreground="#0e2021",
+        style.configure("TButton", background=pal["btn_bg"], padding=(12, 8), borderwidth=0)
+        style.map("TButton", background=[("active", pal["btn_hover"])])
+        style.configure("Start.TButton", background=ACCENT, foreground=pal["on_accent"],
                         font=("Microsoft YaHei UI", 12, "bold"), padding=(24, 11))
-        style.map("Start.TButton", background=[("active", "#76e5cf")])
-        style.configure("Stop.TButton", background="#613345", foreground="#ffdee5", padding=(16, 10))
+        style.map("Start.TButton", background=[("active", pal["accent_hover"])])
+        style.configure("Stop.TButton", background=pal["stop_bg"], foreground=pal["stop_fg"], padding=(16, 10))
         style.configure("TEntry", fieldbackground=PANEL, foreground=TEXT, insertcolor=TEXT, padding=5)
         style.configure("TCombobox", fieldbackground=PANEL, background=PANEL, foreground=TEXT, padding=5)
         style.map("TCombobox", fieldbackground=[("readonly", PANEL)], foreground=[("readonly", TEXT)])
@@ -116,7 +123,11 @@ class App(tk.Tk):
         style.configure("TCheckbutton", background=BG)
         style.configure("TNotebook", background=BG, borderwidth=0)
         style.configure("TNotebook.Tab", background=PANEL, padding=(16, 8))
-        style.map("TNotebook.Tab", background=[("selected", "#30485b")])
+        style.map("TNotebook.Tab", background=[("selected", pal["tab_sel"])])
+        if getattr(self, "log", None) is not None:
+            self.log.configure(bg=PANEL, fg=TEXT)
+        if getattr(self, "status_label", None) is not None:
+            self.status_label.configure(foreground=ACCENT)
 
     def build_setting_vars(self):
         self.vars = {}
@@ -127,6 +138,7 @@ class App(tk.Tk):
             self.vars[key] = tk.StringVar(value=str(value))
         self.zoom_var = tk.StringVar(value=ZOOM_LABELS[self.cfg.zoom_mode])
         self.bait_var = tk.BooleanVar(value=self.cfg.bait_vision)
+        self.theme_var = tk.StringVar(value=THEMES[self.cfg.theme]["label"])
         self.video_var = tk.StringVar()
         self.casts_var = tk.StringVar(value=", ".join(map(str, SAMPLE_CASTS)))
 
@@ -159,8 +171,9 @@ class App(tk.Tk):
         self.already_cast = tk.BooleanVar(value=False)
         ttk.Checkbutton(run_row, text="接管已入水、已放大的鱼竿", variable=self.already_cast).pack(side="left", padx=(14, 0))
         self.status_var = tk.StringVar(value="默认区域已内置，识别不准时再 ①② 重新框选；开始后有 5 秒切回游戏")
-        ttk.Label(outer, textvariable=self.status_var, foreground=ACCENT, wraplength=620,
-                  font=("Microsoft YaHei UI", 11, "bold")).pack(anchor="w", pady=(0, 10))
+        self.status_label = ttk.Label(outer, textvariable=self.status_var, foreground=ACCENT, wraplength=620,
+                                      font=("Microsoft YaHei UI", 11, "bold"))
+        self.status_label.pack(anchor="w", pady=(0, 10))
         log_frame = ttk.LabelFrame(outer, text="运行记录", padding=10)
         log_frame.pack(fill="both", expand=True)
         self.stats_var = tk.StringVar(value="亮色 —   鱼饵 —   抛竿 0   提竿信号 0")
@@ -196,6 +209,9 @@ class App(tk.Tk):
             ttk.Entry(timing_frame, textvariable=self.vars[key], width=9).grid(row=row, column=1, padx=(10, 0), pady=3)
         ttk.Label(timing_frame, text="右键放大方式").grid(row=5, column=0, sticky="w", pady=5)
         ttk.Combobox(timing_frame, textvariable=self.zoom_var, values=list(ZOOM_LABELS.values()), width=9, state="readonly").grid(row=5, column=1)
+        ttk.Label(timing_frame, text="界面主题").grid(row=6, column=0, sticky="w", pady=5)
+        ttk.Combobox(timing_frame, textvariable=self.theme_var, values=[t["label"] for t in THEMES.values()],
+                     width=9, state="readonly", command=self.on_theme_change).grid(row=6, column=1)
         ttk.Label(timing_frame, text="等待均从每次提竿开始计时", style="Muted.TLabel").grid(row=7, column=0, columnspan=2, sticky="w", pady=8)
         for row, (key, label) in enumerate(VISION_FIELDS):
             ttk.Label(vision_frame, text=label).grid(row=row, column=0, sticky="w", pady=3)
@@ -252,7 +268,11 @@ class App(tk.Tk):
             data[key] = value
         data["zoom_mode"] = {label: mode for mode, label in ZOOM_LABELS.items()}[self.zoom_var.get()]
         data["bait_vision"] = self.bait_var.get()
+        data["theme"] = {t["label"]: key for key, t in THEMES.items()}[self.theme_var.get()]
         return Config(**data).validate()
+
+    def on_theme_change(self, _):
+        self.apply_theme({t["label"]: key for key, t in THEMES.items()}[self.theme_var.get()])
 
     def save_config(self):
         try:

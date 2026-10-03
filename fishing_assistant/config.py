@@ -6,6 +6,31 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = ROOT / "local_config.json"
 
+# Presentation palettes; keys are stable identifiers stored in local_config.json.
+THEMES = {
+    "graphite": {
+        "label": "石墨鎏金",
+        "bg": "#17151a", "panel": "#221f26", "text": "#ece7dd", "muted": "#9d97a6",
+        "accent": "#e8b34c", "accent_hover": "#f5cd7d", "on_accent": "#241c07",
+        "btn_bg": "#322d3a", "btn_hover": "#453e4f", "tab_sel": "#3d3747", "border": "#3f3947",
+        "stop_bg": "#5d3644", "stop_fg": "#ffd9e4",
+    },
+    "indigo": {
+        "label": "深海靛蓝",
+        "bg": "#0e1626", "panel": "#182338", "text": "#e6edfa", "muted": "#8fa0bd",
+        "accent": "#4cc2ff", "accent_hover": "#7dd4ff", "on_accent": "#04202e",
+        "btn_bg": "#24344f", "btn_hover": "#32476a", "tab_sel": "#2f425f", "border": "#2c3d58",
+        "stop_bg": "#553048", "stop_fg": "#ffd4ec",
+    },
+    "light": {
+        "label": "暖沙浅色",
+        "bg": "#f1ede5", "panel": "#faf8f3", "text": "#2c2a25", "muted": "#8b8577",
+        "accent": "#c96a2d", "accent_hover": "#e08344", "on_accent": "#fff6ec",
+        "btn_bg": "#ddd6c8", "btn_hover": "#ccc4b3", "tab_sel": "#d2c9b6", "border": "#c9c1af",
+        "stop_bg": "#a34d5e", "stop_fg": "#ffe9ee",
+    },
+}
+
 
 @dataclass
 class Config:
@@ -26,6 +51,7 @@ class Config:
     zoom_mode: str = "hold"
     bait_vision: bool = True
     initial_bait: int = 5
+    theme: str = "graphite"
     # User-calibrated working preset on a 2560 x 1600 client; scale with the window.
     splash_roi: list = field(default_factory=lambda: [510/2560, 311/1600, 1651/2560, 932/1600])
     bait_roi: list = field(default_factory=lambda: [2356/2560, 1365/1600, 110/2560, 71/1600])
@@ -45,6 +71,8 @@ class Config:
             raise ValueError("颜色阈值应为 0～255")
         if self.zoom_mode not in ("toggle", "hold", "manual"):
             raise ValueError("未知放大方式")
+        if self.theme not in THEMES:
+            raise ValueError("未知主题")
         for roi in (self.splash_roi, self.bait_roi):
             if len(roi) != 4 or not all(math.isfinite(x) for x in roi):
                 raise ValueError("检测区域无效")
