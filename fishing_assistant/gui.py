@@ -19,9 +19,9 @@ TIMING_FIELDS = [("reel_wait", "普通提竿 → 抛竿 / 秒"), ("reload_wait",
                  ("cast_blind", "抛竿后屏蔽 / 秒"), ("zoom_delay", "抛竿后右键 / 秒"),
                  ("calm_time", "平静确认 / 秒")]
 VISION_FIELDS = [("splash_ratio", "水花触发面积 / %"), ("calm_ratio", "平静面积上限 / %"),
-                 ("value_min", "亮度下限 / 0–255"), ("saturation_max", "饱和度上限 / 0–255"),
-                 ("fps", "检测频率 / 每秒"), ("bite_timeout", "等待咬钩超时 / 秒"),
-                 ("initial_bait", "手动初始鱼饵 / 1–5")]
+                 ("confirm_time", "水花确认 / 秒"), ("value_min", "亮度下限 / 0–255"),
+                 ("saturation_max", "饱和度上限 / 0–255"), ("fps", "检测频率 / 每秒"),
+                 ("bite_timeout", "等待咬钩超时 / 秒"), ("initial_bait", "手动初始鱼饵 / 1–5")]
 ZOOM_LABELS = {"toggle": "单击切换", "hold": "按住右键", "manual": "手动放大"}
 
 

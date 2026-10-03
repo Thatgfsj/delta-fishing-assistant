@@ -40,7 +40,7 @@ class Config:
     reload_wait: float = 4.8
     zoom_delay: float = 0.7
     calm_time: float = 0.2
-    confirm_time: float = 0.025
+    confirm_time: float = 0.12
     bite_timeout: float = 60.0
     ready_timeout: float = 12.0
     splash_ratio: float = 1000 / 126000

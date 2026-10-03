@@ -5,7 +5,7 @@ from fishing_assistant.engine import Engine, Observation, SplashGate
 
 class GateTests(unittest.TestCase):
     def test_entry_splash_is_ignored_and_one_bite_only(self):
-        gate = SplashGate(Config())
+        gate = SplashGate(Config(confirm_time=0.025))
         gate.reset(0)
         hits = []
         for i in range(600):
@@ -34,7 +34,7 @@ class GateTests(unittest.TestCase):
 
 class EngineTests(unittest.TestCase):
     def setup_hook(self, bait, vision=False):
-        cfg = Config(bait_vision=vision, initial_bait=bait, cast_blind=0, calm_time=0, zoom_mode="manual")
+        cfg = Config(bait_vision=vision, initial_bait=bait, cast_blind=0, calm_time=0, confirm_time=0, zoom_mode="manual")
         engine = Engine(cfg)
         engine.start(0)
         self.assertEqual(engine.update(0, Observation(bait=bait)), ["cast"])
